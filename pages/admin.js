@@ -1,18 +1,21 @@
-import { useSession } from "next-auth/react";
+import { getSession, signOut } from "next-auth/react";
+import SignInForm from "../components/SignInForm";
 
-export default function AdminPage() {
-  const { data: session } = useSession();
-
+export default function Admin({ session }) {
+  if (!session) {
+    return <SignInForm />;
+  }
   return (
-    <div>
-      <h1>Admin Panel</h1>
-      {!session && <p>You must log in first.</p>}
-      {session && <p>Welcome, {session.user.name}!</p>}
+    <div style={{ padding: 24 }}>
+      <h1>Admin Dashboard</h1>
+      <p>Welcome, {session.user.name}</p>
+      <button onClick={() => signOut()}>Sign out</button>
+      {/* Admin UI: device list, sessions, logs */}
     </div>
   );
 }
 
-// Prevent static export
-export async function getServerSideProps() {
-  return { props: {} };
+export async function getServerSideProps(context) {
+  const session = await getSession(context);
+  return { props: { session } };
 }

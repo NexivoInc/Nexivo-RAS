@@ -1,21 +1,25 @@
 import { getSession, signOut } from "next-auth/react";
-import SignInForm from "../components/SignInForm";
 
-export default function Admin({ session }) {
-  if (!session) {
-    return <SignInForm />;
-  }
+export default function Admin({ user }) {
+  if (!user) return <div>Not authorized</div>;
+
   return (
     <div style={{ padding: 24 }}>
       <h1>Admin Dashboard</h1>
-      <p>Welcome, {session.user.name}</p>
-      <button onClick={() => signOut()}>Sign out</button>
-      {/* Admin UI: device list, sessions, logs */}
+      <p>Welcome, {user.name || user.email}</p>
+      <button onClick={() => signOut({ callbackUrl: "/" })}>Sign out</button>
+
+      {/* TODO: add device list, agent controls, etc. */}
     </div>
   );
 }
 
-export async function getServerSideProps(context) {
-  const session = await getSession(context);
-  return { props: { session } };
+export async function getServerSideProps(ctx) {
+  const session = await getSession(ctx);
+  if (!session) {
+    return {
+      redirect: { destination: "/auth/signin", permanent: false },
+    };
+  }
+  return { props: { user: session.user } };
 }

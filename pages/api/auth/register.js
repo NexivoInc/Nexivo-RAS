@@ -1,33 +1,35 @@
-import bcrypt from "bcryptjs";
-import { pool } from "../../../lib/db";
+import { useState } from "react";
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
-  }
+export default function Register() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const { name, email, password } = req.body;
-
-  if (!name || !email || !password) {
-    return res.status(400).json({ message: "Missing fields" });
-  }
-
-  try {
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const result = await pool.query(
-      "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email",
-      [name, email, hashedPassword]
-    );
-
-    return res.status(201).json({ user: result.rows[0] });
-  } catch (err) {
-    console.error(err);
-
-    if (err.code === "23505") {
-      return res.status(400).json({ message: "Email already exists" });
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password }),
+    });
+    if (res.ok) {
+      alert("Registered — you can now sign in");
+      window.location.href = "/auth/signin";
+    } else {
+      const j = await res.json();
+      alert("Register failed: " + (j?.error || j?.message || res.statusText));
     }
-
-    return res.status(500).json({ message: "Server error" });
   }
+
+  return (
+    <div style={{ padding: 24, maxWidth: 640, margin: "0 auto" }}>
+      <h1>Create an account</h1>
+      <form onSubmit={handleSubmit} style={{ display: "grid", gap: 8 }}>
+        <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+        <input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input placeholder="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <button type="submit">Create account</button>
+      </form>
+    </div>
+  );
 }
